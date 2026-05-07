@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "firebase": "^12.7.0"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "jsdom": "^27.4.0"
+  }
+}

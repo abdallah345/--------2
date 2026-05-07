@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sag & Shawarma - المتجر</title>
+    <link rel="stylesheet" href="assets/css/client.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="branchSelectorModal" class="modal branch-modal">
+        <div class="modal-content branch-content">
+            <h3 data-translate="welcomeTitle">مرحباً بك في Sag & Shawarma!</h3>
+            <p data-translate="selectBranchPrompt">الرجاء اختيار الفرع الذي تود الطلب منه:</p>
+            
+            <div class="form-group" style="margin-top: 20px;">
+                <select id="initialBranchSelect" class="large-select" required>
+                     <option value="" disabled selected data-translate="branchSelectPlaceholder">-- اختر فرع --</option>
+                </select>
+            </div>
+            
+            <button id="confirmBranchBtn" class="btn primary-btn large-btn" disabled data-translate="confirmSelection">تأكيد الاختيار</button>
+        </div>
+    </div>
+
+
+    <header class="navbar">
+        <div class="logo" onclick="showView('products')">
+            <img src="assets/images/logo.png" alt="Sag & Shawarma Logo">
+            <h1 id="appName">Sag & Shawarma</h1>
+        </div>
+        <div class="actions">
+            <button id="ordersButton" class="orders-button" data-translate="ordersButton">تتبع الطلبات</button>
+
+            <select id="languageSelector" class="lang-selector">
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+            </select>
+
+
+
+            <button id="toggleCartBtn" class="cart-button" data-translate-prefix="cartButton">
+                🛒 سلة الطلبات (<span id="cartCount">0</span>)
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <section id="productsView" class="products-section active-view">
+            <h2 data-translate="productsTitle">قائمة المنتجات المتاحة</h2>
+            
+            <div class="product-controls">
+                <input type="text" id="searchBar" data-translate-placeholder="searchPlaceholder" placeholder="البحث باسم المنتج...">
+                <select id="categoryFilter" data-translate-select="categoryAll">
+                    <option value="all" data-translate="categoryAll">كل الفئات</option>
+                </select>
+            </div>
+            
+            <div id="productsContainer" class="products-grid">
+                </div>
+        </section>
+
+        <section id="ordersView" class="products-section hidden">
+            <h2 data-translate="ordersViewTitle">تتبع حالة طلباتك</h2>
+
+            <div class="phone-input-section" style="margin-bottom: 30px; text-align: center;">
+                <div class="form-group" style="max-width: 400px; margin: 0 auto;">
+                    <label for="orderPhoneInput" style="display: block; margin-bottom: 10px; font-weight: bold;">أدخل رقم هاتفك لعرض الطلبات:</label>
+                    <input type="tel" id="orderPhoneInput" placeholder="رقم الهاتف" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">
+                    <button id="searchOrdersBtn" class="btn primary-btn" style="margin-top: 10px;">البحث عن الطلبات</button>
+                </div>
+            </div>
+
+            <div id="ordersContainer" class="orders-grid">
+                <!-- Order cards will be inserted here -->
+            </div>
+        </section>
+        
+    </main>
+
+    <aside id="cartSidebar" class="cart-sidebar hidden">
+        <div class="cart-header">
+            <h3 id="cartSidebarTitle" data-translate="cartSidebarTitle">🛒 سلة الطلبات</h3>
+            <button id="closeCartBtn" class="close-btn">&times;</button>
+        </div>
+        
+        <ul id="cartItemsList" class="cart-items">
+            </ul>
+        
+        <div class="cart-footer">
+            <p id="cartTotal" class="cart-total" data-translate-prefix="totalPrice">الإجمالي: 0.00 جنيه</p>
+            <div class="cart-actions">
+                <button id="checkoutBtn" class="btn primary-btn" data-translate="checkoutButton">إتمام الطلب</button>
+                <button id="clearCartBtn" class="btn secondary-btn" data-translate="clearCartButton">مسح السلة</button>
+            </div>
+        </div>
+    </aside>
+
+    <div id="productDetailModal" class="modal hidden">
+        <div class="modal-content product-detail-content">
+            <button id="closeProductDetailBtn" class="close-btn">&times;</button>
+            
+            <div class="detail-container">
+                <div class="detail-image">
+                    <img id="detailProductImage" src="" alt="صورة المنتج">
+                </div>
+                <div class="detail-info">
+                    <h3 id="detailProductName">اسم المنتج</h3>
+                    <p id="detailProductDescription" class="product-description-full"></p>
+                    <hr>
+                    
+                    <div class="detail-options" id="productOptionsContainer">
+                        <h4 data-translate="optionsTitle">الإضافات المتاحة (اختياري)</h4>
+                        </div>
+                    
+                    <div class="detail-comments">
+                        <h4 data-translate="commentsTitle">ملاحظاتك للطلب</h4>
+                        <textarea id="detailProductComments" data-translate-placeholder="commentsPlaceholder" placeholder="اكتب أي ملاحظات أو تعليمات خاصة بالطلب..."></textarea>
+                       
+                    </div>
+
+                    <div class="detail-action-bar">
+                        <span id="detailProductPrice" class="product-price-large">0.00 ج.م</span>
+                        
+                        <div class="quantity-add-to-cart">
+                            <div class="item-quantity-control large-control">
+                                <button class="btn secondary-btn" data-action="decrement">-</button>
+                                <span id="detailQuantityDisplay">1</span>
+                                <button class="btn secondary-btn" data-action="increment">+</button>
+                            </div>
+                            <button id="detailAddToCartBtn" class="btn primary-btn large-btn" data-translate="addToCartButton">
+                                أضف للسلة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="checkoutModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 data-translate="checkoutTitle">إنهاء الطلب والتوصيل</h3>
+            <form id="checkoutForm">
+
+                <div id="orderTypeSelection" class="form-group checkout-type-selector">
+                    <h4 data-translate="orderTypeHeader">طريقة استلام الطلب</h4>
+                    <div class="radio-group">
+                        <input type="radio" id="deliveryOption" name="orderType" value="Delivery" checked>
+                        <label for="deliveryOption" data-translate="deliveryOptionLabel">توصيل</label>
+
+                        <input type="radio" id="pickupOption" name="orderType" value="Pickup">
+                        <label for="pickupOption" data-translate="pickupOptionLabel">استلام من الفرع</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="customerName" data-translate="customerNameLabel">الاسم الكامل</label>
+                    <input type="text" id="customerName" name="customerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="customerPhone" data-translate="customerPhoneLabel">رقم الهاتف</label>
+                    <input type="tel" id="customerPhone" name="customerPhone" required>
+                </div>
+
+                <div id="deliveryFields">
+                    <div class="form-group">
+                        <label for="customerAddress" data-translate="customerAddressLabel">العنوان التفصيلي</label>
+                        <textarea id="customerAddress" name="customerAddress" rows="3" required></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="orderBranch" data-translate="branchSelectLabel">الفرع الأقرب</label>
+                    <select id="orderBranch" name="orderBranch" required>
+                         <option value="" data-translate="branchSelectPlaceholder">-- اختر فرع --</option>
+                         </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentMethod" data-translate="paymentMethodLabel">طريقة الدفع</label>
+                    <select id="paymentMethod" name="paymentMethod" required>
+                         <option value="Cash" data-translate="paymentCashOption">نقداً عند الاستلام</option>
+                         </select>
+                </div>
+
+
+                <div class="cart-summary total" style="margin-top: 20px;">
+                    <h4 data-translate="totalDueTitle">الإجمالي المطلوب دفعه:</h4>
+                    <h4 id="checkoutTotalAmount">0.00 ج.م</h4>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button type="button" class="btn secondary-btn" id="backToCartBtn" data-translate="cancelCheckoutButton">تعديل السلة</button>
+                    <button type="submit" class="btn primary-btn" data-translate="confirmOrderButton">تأكيد الطلب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="orderDetailsModal" class="modal hidden">
+        <div class="modal-content order-details-content">
+            <button id="closeOrderDetailsBtn" class="close-btn">&times;</button>
+
+            <h3>تفاصيل الطلب</h3>
+
+            <div class="order-details-header">
+                <div class="order-info-grid">
+                    <div class="info-item">
+                        <span class="info-label">رقم الطلب:</span>
+                        <span class="info-value" id="orderDetailId"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">تاريخ الطلب:</span>
+                        <span class="info-value" id="orderDetailDate"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">الحالة:</span>
+                        <span class="info-value status-badge" id="orderDetailStatus"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">الفرع:</span>
+                        <span class="info-value" id="orderDetailBranch"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="order-details-customer">
+                <h4>معلومات العميل</h4>
+                <div class="customer-info-grid">
+                    <div class="info-item">
+                        <span class="info-label">الاسم:</span>
+                        <span class="info-value" id="orderDetailCustomerName"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">الهاتف:</span>
+                        <span class="info-value" id="orderDetailCustomerPhone"></span>
+                    </div>
+               <div class="info-item">
+                        <span class="info-label">طريقة الاستلام:</span>
+                        <span class="info-value" id="orderDetailOrderType"></span>
+                    </div>
+                    <div class="info-item" id="addressItem" style="display: none;">
+                        <span class="info-label">العنوان:</span>
+                        <span class="info-value" id="orderDetailCustomerAddress"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">طريقة الدفع:</span>
+                        <span class="info-value" id="orderDetailPaymentMethod"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="order-details-items">
+                <h4>عناصر الطلب</h4>
+                <div id="orderItemsList" class="order-items-list">
+                    <!-- Order items will be inserted here -->
+                </div>
+                <div class="order-total">
+                    <strong>الإجمالي: <span id="orderDetailTotal"></span></strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            
+            <div class="footer-section about-us">
+                <h4 data-translate="appName">Sag & Shawarma</h4>
+                <p data-translate="aboutUsText">نقدم لك أجود وألذ سندويتشات الشاورما المصنوعة بحب وعناية. خبرة تمتد لسنوات لضمان طعم لا يُنسى.</p>
+                <p class="social-links">
+                    <a href="https://www.facebook.com/sagshawrma" aria-label="فيسبوك"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/sagshawrma/" aria-label="إنستجرام"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.tiktok.com/@sagshawrma" aria-label="تيك توك"><i class="fab fa-tiktok"></i></a>
+                    <a href="https://wa.me/201210400225" aria-label="واتساب"><i class="fab fa-whatsapp"></i></a>
+                </p>
+            </div>
+            
+            <div class="footer-section quick-links">
+                <h4 data-translate="quickLinksTitle">روابط سريعة</h4>
+                <ul>
+                    <li><a href="#" data-translate="homeLink">الرئيسية</a></li>
+                    <li><a href="#" data-translate="productsLink">المنتجات</a></li>
+                    <li><a href="#" data-translate="privacyLink">سياسة الخصوصية</a></li>
+                    <li><a href="#" data-translate="termsLink">الشروط والأحكام</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section contact-info">
+                <h4 data-translate="contactUsTitle">تواصل معنا</h4>
+                <p><span data-translate="emailPrefix">البريد الإلكتروني: </span><a href="mailto:sagshawrma@gmail.com">sagshawrma@gmail.com</a></p>
+                <p><span data-translate="phonePrefix">هاتف: 📞 19395</span></p>
+                <p><span data-translate="addressPrefix">العنوان الرئيسي: فرع الزمالك , شارع 26يوليو </span></p>
+            </div>
+            
+        </div>
+        
+        <div class="footer-bottom">
+            <div class="container">
+                <p>&copy; <span id="currentYear"></span> Sag & Shawarma. <span data-translate="rightsReserved">جميع الحقوق محفوظة.</span></p>
+            </div>
+        </div>
+    </footer>
+
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-functions-compat.js"></script>
+
+    <script src="assets/js/client.js"></script>
+</body>
+</html>

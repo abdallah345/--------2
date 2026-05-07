@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';">
+    <title>لوحة تحكم المدير</title>
+    
+    <link rel="stylesheet" href="assets/css/admin.css?v=2"> 
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-functions-compat.js"></script>
+</head>
+<body>
+
+    <div id="dashboardContainer" class="dashboard">
+        <aside class="sidebar">
+            <div class="logo">شاورما صاج</div>
+            <nav class="navigation">
+                <button class="nav-btn active" data-view="products"><i class="fas fa-boxes"></i> المنتجات</button>
+                <button class="nav-btn" data-view="orders"><i class="fas fa-receipt"></i> الطلبات</button>
+                <button class="nav-btn" data-view="reports"><i class="fas fa-chart-line"></i> التقارير</button> <button class="nav-btn" data-view="branches"><i class="fas fa-store"></i> الفروع</button>
+                <button class="nav-btn" data-view="users"><i class="fas fa-users"></i> المستخدمون</button>
+                <button class="nav-btn" data-view="categories"><i class="fas fa-tags"></i> الفئات</button>
+            </nav>
+            <div class="user-info">
+                <p><i class="fas fa-user-circle"></i> <span id="loggedInUserName">...</span></p>
+                <p><i class="fas fa-shield-alt"></i> الدور: <span id="loggedInUserRole">...</span></p>
+            </div>
+        </aside>
+
+        <main class="main-content content">
+            <header class="header">
+                <h1 id="currentViewTitle">المنتجات</h1>
+                <div class="header-actions">
+                    <button id="languageToggle" class="btn secondary"><i class="fas fa-language"></i> العربية / English</button>
+                    <button id="addProductBtn" class="btn primary add-btn" data-view-btn="products"><i class="fas fa-plus"></i> إضافة منتج</button>
+                    <button id="addBranchBtn" class="btn primary add-btn hidden" data-view-btn="branches"><i class="fas fa-plus"></i> إضافة فرع</button>
+                    <button id="addUserBtn" class="btn primary add-btn hidden" data-view-btn="users"><i class="fas fa-plus"></i> إضافة مستخدم</button>
+                    <button id="addCategoryBtn" class="btn primary add-btn hidden" data-view-btn="categories"><i class="fas fa-plus"></i> إضافة فئة</button>
+                    <button id="logoutBtn" class="btn danger"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
+                </div>
+            </header>
+
+            <section id="products-view" class="view">
+                <div class="filter-controls">
+                    <input type="text" id="productSearch" placeholder="البحث باسم المنتج أو الوصف...">
+                    <select id="productFilterCategory">
+                        <option value="all">جميع الفئات</option>
+                        </select>
+                </div>
+                <div id="productsGrid" class="products-grid">
+                    </div>
+            </section>
+
+            <section id="orders-view" class="view hidden">
+                <div class="filter-controls">
+                    <input type="text" id="orderSearch" placeholder="البحث برقم الطلب أو اسم العميل...">
+                    <select id="orderFilterStatus">
+                        <option value="all">جميع الحالات</option>
+                        <option value="Pending">قيد الانتظار</option>
+                        <option value="Processing">قيد التجهيز</option>
+                        <option value="Ready">جاهز للاستلام</option>
+                        <option value="Out for Delivery">في الطريق</option>
+                        <option value="Delivered">تم التوصيل</option>
+                        <option value="Canceled">ملغي</option>
+                    </select>
+                    <select id="orderFilterBranch">
+                        <option value="all">جميع الفروع</option>
+                        </select>
+                    <button id="refreshOrdersBtn" class="btn secondary small" title="تحديث قائمة الطلبات"><i class="fas fa-sync-alt"></i></button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>العميل</th>
+                                <th>الفرع</th>
+                                <th>الإجمالي</th>
+                                <th>الحالة</th>
+                                <th>التاريخ والوقت</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+            
+          <section id="reports-view" class="view hidden">
+    <h2>التقارير الإدارية</h2>
+    
+    <div class="filter-controls" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
+        <h3>تصفية التقارير</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+            <div class="form-group">
+                <label for="reportBranchFilter">تصفية حسب الفرع:</label>
+                <select id="reportBranchFilter">
+                    <option value="all">جميع الفروع</option>
+                    </select>
+            </div>
+            <div class="form-group">
+                <label for="reportStartDate">تاريخ البدء:</label>
+                <input type="date" id="reportStartDate">
+            </div>
+            <div class="form-group">
+                <label for="reportEndDate">تاريخ الانتهاء:</label>
+                <input type="date" id="reportEndDate">
+            </div>
+            <button type="button" class="btn primary" id="generateReportsBtn"><i class="fas fa-sync-alt"></i> توليد التقارير</button>
+        </div>
+    </div>
+    
+    <div class="report-card" style="margin-bottom: 20px; padding: 20px; border: 1px solid #007bff; border-left: 5px solid #007bff; border-radius: 8px;">
+        <h3>📊 ملخص إجمالي المبيعات</h3>
+        <p style="font-size: 1.5em; margin: 0;">الإجمالي المحسوب: <span id="totalSalesAmount" style="font-weight: bold; color: #007bff;">0.00 ج.م</span></p>
+    </div>
+    
+    <div class="report-card" style="margin-bottom: 20px; padding: 20px; border: 1px solid #28a745; border-left: 5px solid #28a745; border-radius: 8px;">
+        <h3>⭐ المنتجات الأكثر مبيعاً (الكمية) - أعلى 10</h3>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>اسم المنتج</th>
+                        <th>الفئة</th>
+                        <th>الكمية الإجمالية</th>
+                    </tr>
+                </thead>
+                <tbody id="bestSellersTableBody">
+                    </tbody>
+            </table>
+        </div>
+        <p id="bestSellersMessage" style="text-align: center; margin-top: 10px; color: #555;"></p>
+    </div>
+</section>
+            <section id="branches-view" class="view hidden">
+                <div class="filter-controls">
+                    <input type="text" id="branchSearch" placeholder="البحث باسم الفرع أو العنوان...">
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>الاسم</th>
+                                <th>الموقع</th>
+                                <th>الهاتف</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="branchesTableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="users-view" class="view hidden">
+                <div class="filter-controls">
+                    <input type="text" id="userSearch" placeholder="البحث بالاسم أو البريد الإلكتروني...">
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>الدور</th>
+                                <th>الفرع</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <section id="categories-view" class="view hidden">
+                <div class="filter-controls">
+                    <input type="text" id="categorySearch" placeholder="البحث باسم الفئة...">
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>مفتاح ID (Key)</th>
+                                <th>الاسم (العربية)</th>
+                                <th>الاسم (الإنجليزية)</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <div id="productModal" class="modal hidden">
+        <div class="modal-card">
+            <h3 class="modal-title">إضافة/تعديل منتج</h3>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+<div class="form-group">
+                    <label for="productName">اسم المنتج (العربية)</label>
+                    <input type="text" id="productName" required>
+                </div>
+                <div class="form-group">
+                    <label for="productName_en">اسم المنتج (الإنجليزية)</label>
+                    <input type="text" id="productName_en">
+                </div>
+                <div class="form-group">
+                    <label>خيارات المنتج (الأحجام والأسعار):</label>
+                    <div id="productOptionsContainer">
+                        <div class="options-header">
+                            <input type="text" id="optionName_ar" placeholder="اسم الخيار (عربي)">
+                            <input type="text" id="optionName_en" placeholder="اسم الخيار (إنجليزي)">
+                            <input type="number" id="optionPrice" step="0.01" placeholder="السعر (ج.م)">
+                            <button type="button" id="addOptionBtn" class="btn small primary"><i class="fas fa-plus"></i> إضافة خيار</button>
+                        </div>
+                        <div id="optionsList" class="options-list">
+                            <!-- Options will be added here dynamically -->
+                        </div>
+                    </div>
+                    <input type="hidden" id="productOptions" value="[]">
+                </div>
+                <div class="form-group">
+                    <label>الإضافات المتاحة للمنتج:</label>
+                    <div id="productAdditionsContainer">
+                        <div class="additions-header">
+                            <input type="text" id="additionName_ar" placeholder="اسم الإضافة (عربي)">
+                            <input type="text" id="additionName_en" placeholder="اسم الإضافة (إنجليزي)">
+                            <input type="number" id="additionPrice" step="0.01" placeholder="السعر (ج.م)">
+                            <button type="button" id="addAdditionBtn" class="btn small primary"><i class="fas fa-plus"></i> إضافة إضافة</button>
+                        </div>
+                        <div id="additionsList" class="additions-list">
+                            <!-- Additions will be added here dynamically -->
+                        </div>
+                    </div>
+                    <input type="hidden" id="productAdditions" value="[]">
+                </div>
+                <div class="form-group">
+                    <label for="productDescription">الوصف (العربية)</label>
+                    <textarea id="productDescription" placeholder="وصف المنتج بالعربية"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="productDescription_en">الوصف (الإنجليزية)</label>
+                    <textarea id="productDescription_en" placeholder="Product description in English"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="productCategory">الفئة</label>
+                    <select id="productCategory" required>
+                        </select>
+                </div>
+                <div class="form-group">
+                    <label for="productPrice">السعر (ج.م)</label>
+                    <input type="number" id="productPrice" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="productDiscountPrice">سعر الخصم (ج.م) - اختياري</label>
+                    <input type="number" id="productDiscountPrice" step="0.01" placeholder="اتركه فارغاً إذا لم يكن هناك خصم">
+                </div>
+                <div class="form-group">
+                    <label for="productDiscountPercentage">نسبة الخصم (%) - اختياري</label>
+                    <input type="number" id="productDiscountPercentage" step="0.01" min="0" max="100" placeholder="مثال: 10 لخصم 10%">
+                </div>
+                <div class="form-group">
+                    <label for="productIsNew">
+                        <input type="checkbox" id="productIsNew"> منتج جديد
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>الفروع المتاح بها المنتج:</label>
+                    <div id="productBranchesContainer">
+                        <div class="branches-header">
+                            <button type="button" id="selectAllBranchesBtn" class="btn small secondary">تحديد الكل</button>
+                            <button type="button" id="clearAllBranchesBtn" class="btn small secondary">إلغاء تحديد الكل</button>
+                        </div>
+                        <div id="branchesList" class="branches-list">
+                            <!-- Branches will be loaded here dynamically -->
+                        </div>
+                    </div>
+                    <input type="hidden" id="productBranches" value="[]">
+                </div>
+                <div class="form-group">
+                    <label for="productImageFile">صورة المنتج</label>
+                    <input type="file" id="productImageFile" accept="image/*">
+                    <input type="hidden" id="existingProductImage">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn primary">حفظ</button>
+                    <button type="button" class="btn secondary" id="cancelProductBtn">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="branchModal" class="modal hidden">
+        <div class="modal-card">
+            <h3 class="modal-title">إضافة/تعديل فرع</h3>
+            <form id="branchForm">
+                <input type="hidden" id="branchId">
+                <div class="form-group">
+                    <label for="branchName">اسم الفرع</label>
+                    <input type="text" id="branchName" required>
+                </div>
+                <div class="form-group">
+                    <label for="branchLocation">الموقع/العنوان</label>
+                    <input type="text" id="branchLocation" required>
+                </div>
+                <div class="form-group">
+                    <label for="branchPhone">رقم الهاتف</label>
+                    <input type="tel" id="branchPhone" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn primary">حفظ</button>
+                    <button type="button" class="btn secondary" id="cancelBranchBtn">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="userModal" class="modal hidden">
+        <div class="modal-card">
+            <h3 class="modal-title">إضافة/تعديل مستخدم</h3>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label for="userName">الاسم</label>
+                    <input type="text" id="userName" required>
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">البريد الإلكتروني</label>
+                    <input type="email" id="userEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">كلمة المرور (تُترك فارغة للتعديل)</label>
+                    <input type="password" id="userPassword">
+                </div>
+                <div class="form-group">
+                    <label for="userRole">الدور</label>
+                    <select id="userRole" required>
+                        </select>
+                </div>
+                <div class="form-group">
+                    <label for="userBranch">الفرع المرتبط</label>
+                    <select id="userBranch">
+                        </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn primary">حفظ</button>
+                    <button type="button" class="btn secondary" id="cancelUserBtn">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="categoryModal" class="modal hidden">
+        <div class="modal-card">
+            <h3 class="modal-title">إضافة/تعديل فئة</h3>
+            <form id="categoryForm">
+                <input type="hidden" id="categoryId">
+                <div class="form-group">
+                    <label for="categoryKey">مفتاح ID (Key) - يجب أن يكون فريداً وباللغة الإنجليزية/أرقام</label>
+                    <input type="text" id="categoryKey" required>
+                </div>
+                <div class="form-group">
+                    <label for="categoryName_ar">اسم الفئة (بالعربية)</label>
+                    <input type="text" id="categoryName_ar" required>
+                </div>
+                <div class="form-group">
+                    <label for="categoryName_en">اسم الفئة (بالإنجليزية)</label>
+                    <input type="text" id="categoryName_en">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn primary">حفظ</button>
+                    <button type="button" class="btn secondary" id="cancelCategoryBtn">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="orderDetailModal" class="modal hidden">
+        <div class="modal-card">
+            <h3 class="modal-title">تفاصيل الطلب <span id="detailOrderId"></span></h3>
+            <div class="detail-section">
+                <h4>بيانات العميل</h4>
+                <p>الاسم: <span id="detailCustomerName"></span></p>
+                <p>الهاتف: <span id="detailCustomerPhone"></span></p>
+                <p>العنوان/مكان الاستلام: <span id="detailCustomerAddress"></span></p>
+            </div>
+            <div class="detail-section">
+                <h4>بيانات الطلب</h4>
+                <p>الفرع: <span id="detailBranchName"></span></p>
+                <p>الحالة: <span id="detailOrderStatus" class="badge"></span></p>
+                <p>الإجمالي: <span id="detailTotalAmount"></span></p>
+            </div>
+            <div class="detail-section">
+                <h4>المنتجات المطلوبة</h4>
+                <ul id="orderItemsList" class="items-list">
+                    </ul>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn secondary" id="closeOrderDetailBtn">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/dashborad.js"></script>
+</body>
+</html>
